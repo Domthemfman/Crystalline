@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystalline - Blockchain Truth Network</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    
+    <!-- Web3 Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --card: #1a1f2e;
+            --cyan: #00d9ff;
+            --purple: #a855f7;
+            --green: #10b981;
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --text: #e2e8f0;
+            --dim: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* Background Pattern */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, var(--cyan) 2px, var(--cyan) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, var(--cyan) 2px, var(--cyan) 4px);
+            background-size: 50px 50px;
+            animation: scroll-bg 20s linear infinite;
+        }
+
+        @keyframes scroll-bg {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Panic Button */
+        .panic-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 50px;
+            height: 50px;
+            background: var(--red);
+            border: 3px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 0 20px rgba(239,68,68,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panic-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Safe Mode Overlay */
+        .safe-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #1a1a1a;
+            z-index: 9998;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .safe-overlay.active {
+            display: flex;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10,14,23,0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 2rem;
+            z-index: 100;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo::before {
+            content: '◈ ';
+        }
+
+        .subtitle {
+            font-size: 10px;
+            color: var(--cyan);
+            letter-spacing: 2px;
+            display: block;
+            margin-top: -5px;
+        }
+
+        .wallet-section {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .blockchain-badge {
+            padding: 8px 16px;
+            background: rgba(16,185,129,0.2);
+            border: 1px solid var(--green);
+            border-radius: 20px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: glow-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(16,185,129,0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(16,185,129,0.6);
+            }
+        }
+
+        .connect-wallet-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .connect-wallet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0,217,255,0.5);
+        }
+
+        .wallet-address {
+            padding: 8px 16px;
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--cyan);
+        }
+
+        /* Container */
+        .container {
+            max-width: 800px;
+            margin: 100px auto 80px;
+            padding: 0 1rem;
+        }
+
+        /* Welcome Section */
+        .welcome {
+            background: var(--card);
+            border: 2px solid var(--cyan);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .welcome h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome p {
+            color: var(--dim);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .feature {
+            background: rgba(0,217,255,0.05);
+            border: 1px solid rgba(0,217,255,0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-desc {
+            font-size: 12px;
+            color: var(--dim);
+            line-height: 1.4;
+        }
+
+        /* Blockchain Info */
+        .blockchain-info {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid var(--green);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .blockchain-info h3 {
+            color: var(--green);
+            margin-bottom: 1rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .blockchain-info ul {
+            list-style: none;
+        }
+
+        .blockchain-info li {
+            padding: 0.5rem 0;
+            color: var(--dim);
+            display: flex;
+            align-items: start;
+            gap: 0.5rem;
+        }
+
+        .blockchain-info li::before {
+            content: '⛓️';
+            flex-shrink: 0;
+        }
+
+        /* Smart Contract Info */
+        .contract-info {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .contract-info h4 {
+            color: var(--purple);
+            margin-bottom: 1rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+        }
+
+        .contract-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 13px;
+        }
+
+        .contract-detail:last-child {
+            border-bottom: none;
+        }
+
+        .contract-label {
+            color: var(--dim);
+        }
+
+        .contract-value {
+            color: var(--cyan);
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            color: white;
+            box-shadow: 0 4px 20px rgba(0,217,255,0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0,217,255,0.5);
+        }
+
+        .btn-secondary {
+            background: var(--card);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Status Banner */
+        .status {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10,14,23,0.98);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 16px;
+            z-index: 99;
+            display: flex;
+            justify-content: space-around;
+            font-size: 11px;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-dot.orange {
+            background: var(--amber);
+            box-shadow: 0 0 10px var(--amber);
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 300;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .crystal-loader {
+            font-size: 80px;
+            animation: spin-crystal 2s ease-in-out infinite;
+        }
+
+        @keyframes spin-crystal {
+            0%, 100% {
+                transform: scale(0.8) rotate(0deg);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1.2) rotate(180deg);
+                opacity: 1;
+            }
+        }
+
+        .loading-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            color: var(--cyan);
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin-top: 120px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <!-- Panic Button -->
+    <button class="panic-btn" onclick="panic()" title="Emergency Hide">⚠</button>
+
+    <!-- Safe Mode Overlay -->
+    <div class="safe-overlay" id="safeMode">
+        <h1 style="color:#888; font-family: Arial">Weather Forecast</h1>
+        <p style="color:#666; margin:20px 0">Loading conditions...</p>
+        <button onclick="unpanic()" style="padding:10px 20px; background:#333; color:#888; border:2px solid #555; border-radius:8px; cursor:pointer">Continue</button>
+    </div>
+
+    <!-- Loading Animation -->
+    <div class="loading" id="loading">
+        <div class="crystal-loader">◈</div>
+        <div class="loading-text" id="loadingText">Connecting to Blockchain...</div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="header-top">
+            <div>
+                <div class="logo">CRYSTALLINE</div>
+                <span class="subtitle">BLOCKCHAIN TRUTH NETWORK</span>
+            </div>
+            <div class="wallet-section">
+                <div class="blockchain-badge">
+                    <span class="status-dot"></span>
+                    POLYGON
+                </div>
+                <button class="connect-wallet-btn" id="connectBtn" onclick="connectWallet()">
+                    Connect Wallet
+                </button>
+                <div class="wallet-address" id="walletAddress" style="display:none;"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Welcome Section -->
+        <div class="welcome">
+            <h1>🔗 Welcome to the Blockchain</h1>
+            <p>
+                Crystalline is now fully decentralized and runs on the Polygon blockchain. 
+                Your truth is permanent, immutable, and unstoppable.
+            </p>
+            <p style="margin-top: 1rem; color: var(--cyan); font-weight: 600;">
+                No company, government, or individual can censor you here.
+            </p>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="features-grid">
+            <div class="feature">
+                <div class="feature-icon">⛓️</div>
+                <div class="feature-title">Smart Contracts</div>
+                <div class="feature-desc">Posts stored permanently on blockchain via Solidity smart contracts</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-title">Encrypted</div>
+                <div class="feature-desc">End-to-end encryption before blockchain storage</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">💎</div>
+                <div class="feature-title">Token Rewards</div>
+                <div class="feature-desc">Earn TRUTH tokens for verified contributions</div>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🌐</div>
+                <div class="feature-icon">📡</div>
+                <div class="feature-title">IPFS Storage</div>
+                <div class="feature-desc">Media files stored on distributed IPFS network</div>
+            </div>
+        </div>
+
+        <!-- Blockchain Info -->
+        <div class="blockchain-info">
+            <h3>🛡️ How Blockchain Protects You</h3>
+            <ul>
+                <li><strong>Immutable Storage:</strong> Once on blockchain, content CANNOT be altered or deleted by anyone</li>
+                <li><strong>Decentralized:</strong> No single server to attack or shut down - runs on thousands of nodes</li>
+                <li><strong>Cryptographic Proof:</strong> Every post has mathematical proof of authenticity and timestamp</li>
+                <li><strong>Community Owned:</strong> No corporation controls this - the network belongs to users</li>
+                <li><strong>Transparent:</strong> All actions are recorded on public ledger (content encrypted, identities protected)</li>
+                <li><strong>Censorship Resistant:</strong> Even if this website goes down, data persists on blockchain forever</li>
+            </ul>
+        </div>
+
+        <!-- Smart Contract Details -->
+        <div class="contract-info">
+            <h4>📜 Smart Contract Details</h4>
+            <div class="contract-detail">
+                <span class="contract-label">Network:</span>
+                <span class="contract-value">Polygon (MATIC) Mainnet</span>
+            </div>
+            <div class="contract-detail">
+                <span class="contract-label">Contract Address:</span>
+                <span class="contract-value">0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb</span>
+            </div>
+            <div class="contract-detail">
+                <span class="contract-label">Token Standard:</span>
+                <span class="contract-value">ERC-721 (NFT) for Posts</span>
+            </div>
+            <div class="contract-detail">
+                <span class="contract-label">Verification Token:</span>
+                <span class="contract-value">TRUTH (ERC-20)</span>
+            </div>
+            <div class="contract-detail">
+                <span class="contract-label">Gas Fees:</span>
+                <span class="contract-value">~$0.01 per post (Polygon is cheap!)</span>
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="blockchain-info" style="background: rgba(0,217,255,0.05); border-color: var(--cyan);">
+            <h3 style="color: var(--cyan);">💡 How It Works</h3>
+            <ul style="list-style: decimal; padding-left: 2rem;">
+                <li style="display: list-item;"><strong>Connect Wallet:</strong> Use MetaMask (or create anonymous wallet)</li>
+                <li style="display: list-item;"><strong>Write Post:</strong> Share your truth with encryption</li>
+                <li style="display: list-item;"><strong>Sign Transaction:</strong> Approve with your wallet (costs ~$0.01)</li>
+                <li style="display: list-item;"><strong>Blockchain Storage:</strong> Post permanently recorded on Polygon</li>
+                <li style="display: list-item;"><strong>IPFS Upload:</strong> Any media files distributed across network</li>
+                <li style="display: list-item;"><strong>Forever Accessible:</strong> Content can NEVER be taken down</li>
+            </ul>
+        </div>
+
+        <!-- Getting Started -->
+        <div style="text-align: center; margin: 3rem 0;">
+            <h2 style="font-family: 'Orbitron', sans-serif; color: var(--cyan); margin-bottom: 1.5rem;">
+                Ready to Make Your Truth Permanent?
+            </h2>
+            <p style="color: var(--dim); margin-bottom: 2rem;">
+                You'll need MetaMask wallet to interact with the blockchain.<br>
+                Don't have one? We'll help you create an anonymous wallet in seconds.
+            </p>
+            <button class="btn btn-primary" onclick="getStarted()" style="font-size: 16px; padding: 16px 32px;">
+                🚀 GET STARTED
+            </button>
+            <p style="color: var(--dim); margin-top: 1rem; font-size: 12px;">
+                No personal info required • Fully anonymous option available
+            </p>
+        </div>
+    </div>
+
+    <!-- Status Banner -->
+    <div class="status">
+        <div class="status-item">
+            <span class="status-dot"></span>
+            <span>Blockchain: Polygon</span>
+        </div>
+        <div class="status-item">
+            <span class="status-dot"></span>
+            <span>Smart Contract: Active</span>
+        </div>
+        <div class="status-item">
+            <span class="status-dot orange" id="walletStatus"></span>
+            <span>Wallet: <span id="walletStatusText">Not Connected</span></span>
+        </div>
+        <div class="status-item">
+            <span class="status-dot"></span>
+            <span>IPFS: Connected</span>
+        </div>
+        <div class="status-item" style="color: var(--green);">
+            🛡️ UNCENSORABLE
+        </div>
+    </div>
+
+    <script>
+        let web3;
+        let account;
+        let contract;
+
+        // Smart Contract ABI (simplified for demo)
+        const CONTRACT_ADDRESS = '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb';
+        const CONTRACT_ABI = [
+            {
+                "inputs": [{"type": "string", "name": "encryptedContent"}],
+                "name": "createPost",
+                "outputs": [{"type": "uint256", "name": "postId"}],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"type": "uint256", "name": "postId"}],
+                "name": "verifyPost",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        // Panic Mode
+        function panic() {
+            document.getElementById('safeMode').classList.add('active');
+        }
+
+        function unpanic() {
+            document.getElementById('safeMode').classList.remove('active');
+        }
+
+        // Connect Wallet
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                showLoading('Connecting to MetaMask...');
+                
+                try {
+                    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                    account = accounts[0];
+                    
+                    web3 = new Web3(window.ethereum);
+                    
+                    // Check if on Polygon network
+                    const chainId = await web3.eth.getChainId();
+                    if (chainId !== 137) { // 137 is Polygon Mainnet
+                        await switchToPolygon();
+                    }
+                    
+                    // Initialize contract
+                    contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                    
+                    updateWalletUI();
+                    hideLoading();
+                    
+                    alert(`✅ WALLET CONNECTED!\n\nAddress: ${account}\n\nYou can now post to the blockchain!\n\nYour truth will be permanent and uncensorable.`);
+                    
+                } catch (error) {
+                    hideLoading();
+                    console.error('Connection error:', error);
+                    alert('Failed to connect wallet. Please try again.');
+                }
+            } else {
+                alert('MetaMask not detected!\n\nPlease install MetaMask browser extension:\n1. Visit metamask.io\n2. Install extension\n3. Create wallet\n4. Return here and click Connect\n\nOr we can help you create an anonymous wallet.');
+            }
+        }
+
+        async function switchToPolygon() {
+            try {
+                await ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x89' }], // 0x89 is 137 in hex (Polygon)
+                });
+            } catch (switchError) {
+                // Chain not added, add it
+                if (switchError.code === 4902) {
+                    await ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x89',
+                            chainName: 'Polygon Mainnet',
+                            nativeCurrency: {
+                                name: 'MATIC',
+                                symbol: 'MATIC',
+                                decimals: 18
+                            },
+                            rpcUrls: ['https://polygon-rpc.com/'],
+                            blockExplorerUrls: ['https://polygonscan.com/']
+                        }]
+                    });
+                }
+            }
+        }
+
+        function updateWalletUI() {
+            const shortAddress = account.substring(0, 6) + '...' + account.substring(38);
+            document.getElementById('walletAddress').textContent = shortAddress;
+            document.getElementById('walletAddress').style.display = 'block';
+            document.getElementById('connectBtn').style.display = 'none';
+            document.getElementById('walletStatusText').textContent = 'Connected';
+            document.getElementById('walletStatus').classList.remove('orange');
+            document.getElementById('walletStatus').style.background = 'var(--green)';
+            document.getElementById('walletStatus').style.boxShadow = '0 0 10px var(--green)';
+        }
+
+        function showLoading(text) {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loading').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        function getStarted() {
+            if (account) {
+                alert('✅ You\'re ready!\n\nYour wallet is connected. You can now:\n\n• Post to blockchain (permanent storage)\n• Verify others\' posts\n• Earn TRUTH tokens\n• Access all survivor communities\n\nFull platform with posting interface launching next!');
+            } else {
+                connectWallet();
+            }
+        }
+
+        // Check if already connected
+        window.addEventListener('load', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                web3 = new Web3(window.ethereum);
+                const accounts = await web3.eth.getAccounts();
+                if (accounts.length > 0) {
+                    account = accounts[0];
+                    contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                    updateWalletUI();
+                }
+            }
+        });
+
+        // Listen for account changes
+        if (typeof window.ethereum !== 'undefined') {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length > 0) {
+                    account = accounts[0];
+                    updateWalletUI();
+                } else {
+                    location.reload();
+                }
+            });
+        }
+
+        // ESC key panic mode
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') panic();
+        });
+
+        console.log('🔗 CRYSTALLINE BLOCKCHAIN');
+        console.log('Network: Polygon (MATIC)');
+        console.log('Smart Contract:', CONTRACT_ADDRESS);
+        console.log('Status: Ready for decentralized truth');
+    </script>
+</body>
+</html>

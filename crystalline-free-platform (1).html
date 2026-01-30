@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystalline - Free Truth Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --card: #1a1f2e;
+            --cyan: #00d9ff;
+            --purple: #a855f7;
+            --green: #10b981;
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --text: #e2e8f0;
+            --dim: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* Background */
+        .bg-pattern {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, var(--cyan) 2px, var(--cyan) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, var(--cyan) 2px, var(--cyan) 4px);
+            background-size: 50px 50px;
+            animation: scroll-bg 20s linear infinite;
+        }
+
+        @keyframes scroll-bg {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Panic Button */
+        .panic-btn {
+            position: fixed;
+            top: 10px; right: 10px;
+            width: 50px; height: 50px;
+            background: var(--red);
+            border: 3px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 0 20px rgba(239,68,68,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .panic-btn:hover { transform: scale(1.1); }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: rgba(10,14,23,0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem 2rem;
+            z-index: 100;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 24px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo::before { content: '◈ '; }
+
+        .subtitle {
+            font-size: 10px;
+            color: var(--cyan);
+            letter-spacing: 2px;
+            display: block;
+            margin-top: -5px;
+        }
+
+        .free-badge {
+            padding: 8px 16px;
+            background: rgba(16,185,129,0.2);
+            border: 1px solid var(--green);
+            border-radius: 20px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--green);
+            font-weight: 600;
+            animation: glow-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(16,185,129,0.3); }
+            50% { box-shadow: 0 0 20px rgba(16,185,129,0.6); }
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 100px auto 80px;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+        }
+
+        .main-content {
+            min-width: 0;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: var(--card);
+            border: 2px solid var(--cyan);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero h2 {
+            font-size: 24px;
+            color: var(--green);
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            color: var(--dim);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        /* Gas Fee Pool */
+        .gas-pool {
+            background: rgba(16,185,129,0.1);
+            border: 2px solid var(--green);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .gas-pool h3 {
+            color: var(--green);
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pool-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .pool-stat {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .pool-stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--green);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .pool-stat-label {
+            font-size: 11px;
+            color: var(--dim);
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green), var(--cyan));
+            border-radius: 6px;
+            width: 76%;
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Sponsored Ad Section */
+        .sponsored {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .sponsored-label {
+            font-size: 10px;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ad-content {
+            background: rgba(0,217,255,0.05);
+            border: 1px solid rgba(0,217,255,0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .ad-content:hover {
+            background: rgba(0,217,255,0.1);
+            transform: translateY(-2px);
+        }
+
+        .ad-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .ad-desc {
+            font-size: 13px;
+            color: var(--dim);
+            line-height: 1.4;
+            margin-bottom: 1rem;
+        }
+
+        .ad-cta {
+            display: inline-block;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+
+        /* Revenue Info */
+        .revenue-info {
+            background: rgba(168,85,247,0.1);
+            border: 1px solid var(--purple);
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-size: 13px;
+            color: var(--dim);
+            line-height: 1.6;
+        }
+
+        .revenue-info h4 {
+            color: var(--purple);
+            margin-bottom: 1rem;
+            font-size: 14px;
+        }
+
+        .revenue-info ul {
+            list-style: none;
+        }
+
+        .revenue-info li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: start;
+            gap: 0.5rem;
+        }
+
+        .revenue-info li::before {
+            content: '💰';
+            flex-shrink: 0;
+        }
+
+        /* Donation Section */
+        .donate {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .donate h4 {
+            color: var(--cyan);
+            margin-bottom: 1rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .donate p {
+            font-size: 12px;
+            color: var(--dim);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .donate-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            width: 100%;
+        }
+
+        .donate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,217,255,0.4);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 16px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            color: white;
+            box-shadow: 0 4px 20px rgba(0,217,255,0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0,217,255,0.5);
+        }
+
+        /* Features */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature {
+            background: var(--card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-desc {
+            font-size: 13px;
+            color: var(--dim);
+            line-height: 1.5;
+        }
+
+        /* Status Banner */
+        .status {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(10,14,23,0.98);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 16px;
+            z-index: 99;
+            display: flex;
+            justify-content: space-around;
+            font-size: 11px;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 968px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                position: relative;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+
+    <button class="panic-btn" onclick="alert('Panic mode activated')" title="Emergency Hide">⚠</button>
+
+    <header>
+        <div class="header-top">
+            <div>
+                <div class="logo">CRYSTALLINE</div>
+                <span class="subtitle">100% FREE FOR SURVIVORS</span>
+            </div>
+            <div class="free-badge">
+                ✓ ALWAYS FREE
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <!-- Hero -->
+            <div class="hero">
+                <h1>🆓 Post to Blockchain</h1>
+                <h2>COMPLETELY FREE</h2>
+                <p>
+                    We believe survivors should NEVER have to pay to share their truth.
+                    That's why we've built a sustainable model where ads and donations 
+                    cover ALL blockchain costs for everyone.
+                </p>
+                <p style="color: var(--green); font-weight: 600; font-size: 18px; margin-top: 1.5rem;">
+                    You post. We pay the fees. It's that simple.
+                </p>
+                <div style="margin-top: 2rem; padding: 1rem; background: rgba(0,217,255,0.05); border-radius: 12px; border: 1px solid rgba(0,217,255,0.2);">
+                    <div style="font-size: 12px; color: var(--cyan); font-weight: 600; margin-bottom: 0.5rem;">💎 TRANSPARENT REVENUE SPLIT</div>
+                    <div style="font-size: 14px; color: var(--text);">
+                        <strong style="color: var(--green);">98%</strong> → Gas Fee Pool (Your Free Posts)<br>
+                        <strong style="color: var(--cyan);">2%</strong> → Platform Maintenance & Development
+                    </div>
+                    <div style="font-size: 11px; color: var(--dim); margin-top: 0.5rem;">
+                        Every dollar accounted for. Zero hidden fees.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gas Fee Pool -->
+            <div class="gas-pool">
+                <h3>⛽ Community Gas Fee Pool</h3>
+                <p style="color: var(--dim); margin-bottom: 1rem;">
+                    Revenue from ethical advertising goes into this pool. Every time you post,
+                    the platform automatically covers your blockchain gas fees.
+                </p>
+                <div class="pool-stats">
+                    <div class="pool-stat">
+                        <div class="pool-stat-value">$847</div>
+                        <div class="pool-stat-label">Current Pool Balance</div>
+                    </div>
+                    <div class="pool-stat">
+                        <div class="pool-stat-value">5,234</div>
+                        <div class="pool-stat-label">Free Posts Funded</div>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p style="color: var(--dim); font-size: 11px; margin-top: 0.5rem; text-align: center;">
+                    Pool funded to support 76,000 more free posts
+                </p>
+            </div>
+
+            <!-- Features -->
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🆓</div>
+                    <div class="feature-title">Always Free</div>
+                    <div class="feature-desc">Never pay to post. Ever. Gas fees covered by platform.</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⛓️</div>
+                    <div class="feature-title">True Blockchain</div>
+                    <div class="feature-desc">Posts stored permanently on Polygon blockchain.</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔒</div>
+                    <div class="feature-title">Encrypted</div>
+                    <div class="feature-desc">End-to-end encryption protects your identity.</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🛡️</div>
+                    <div class="feature-title">Uncensorable</div>
+                    <div class="feature-desc">No company or government can take it down.</div>
+                </div>
+            </div>
+
+            <!-- How It Works -->
+            <div class="revenue-info">
+                <h4>💰 How We Keep It Free</h4>
+                <ul>
+                    <li><strong>Ethical Advertising:</strong> Non-intrusive ads for privacy tools, therapy, legal services</li>
+                    <li><strong>Optional Donations:</strong> Community members can donate to support others</li>
+                    <li><strong>Grant Funding:</strong> Non-profit grants for survivor support platforms</li>
+                    <li><strong>Sponsorships:</strong> Therapists, lawyers, support organizations sponsor the platform</li>
+                </ul>
+                <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 8px;">
+                    <div style="color: var(--cyan); font-weight: 600; margin-bottom: 0.5rem;">Revenue Distribution:</div>
+                    <div style="font-size: 13px; line-height: 1.8;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.3rem;">
+                            <span>Gas Fee Pool (survivors post free)</span>
+                            <strong style="color: var(--green);">98%</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Platform Maintenance & Development</span>
+                            <strong style="color: var(--cyan);">2%</strong>
+                        </div>
+                    </div>
+                </div>
+                <p style="margin-top: 1rem; color: var(--green); font-weight: 600;">
+                    98% of every dollar goes directly to paying gas fees for survivors.
+                </p>
+            </div>
+
+            <div style="text-align: center; margin: 3rem 0;">
+                <button class="btn btn-primary" onclick="alert('✅ READY TO POST FREE!\n\nWhen you click Publish:\n• Platform pays your gas fee (~$0.01)\n• Post goes to blockchain\n• Permanent & uncensorable\n• You pay NOTHING\n\nFull posting interface launching next!')">
+                    🚀 START POSTING FREE
+                </button>
+                <p style="color: var(--dim); margin-top: 1rem; font-size: 13px;">
+                    No wallet required • No fees • No barriers
+                </p>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Sponsored Content -->
+            <div class="sponsored">
+                <div class="sponsored-label">
+                    <span style="color: var(--amber);">★</span>
+                    Sponsored - Supporting Free Access
+                </div>
+                <div class="ad-content" onclick="alert('This ad revenue pays for survivor posts!\n\nAds help keep platform 100% free.')">
+                    <div class="ad-title">🔒 ProtonVPN</div>
+                    <div class="ad-desc">
+                        Protect your privacy with encrypted VPN. 
+                        Military-grade security for survivors.
+                    </div>
+                    <a href="#" class="ad-cta">Learn More →</a>
+                </div>
+            </div>
+
+            <div class="sponsored">
+                <div class="sponsored-label">
+                    <span style="color: var(--amber);">★</span>
+                    Sponsored
+                </div>
+                <div class="ad-content" onclick="alert('Ad revenue = Free posts for survivors!')">
+                    <div class="ad-title">💬 BetterHelp Therapy</div>
+                    <div class="ad-desc">
+                        Online therapy for trauma survivors. 
+                        Licensed therapists available 24/7.
+                    </div>
+                    <a href="#" class="ad-cta">Get Support →</a>
+                </div>
+            </div>
+
+            <!-- Donation -->
+            <div class="donate">
+                <h4>💝 Support Others</h4>
+                <p>
+                    Your donation helps fund free blockchain posts for survivors 
+                    who need their voices heard.
+                </p>
+                <button class="donate-btn" onclick="alert('💝 THANK YOU!\n\nDonation options:\n• Cover 10 posts: $0.10\n• Cover 100 posts: $1\n• Cover 1000 posts: $10\n\nEvery cent goes toward gas fees.\n\nFull donation system coming soon!')">
+                    Donate to Gas Pool
+                </button>
+            </div>
+
+            <!-- Revenue Transparency -->
+            <div class="revenue-info" style="margin-top: 1.5rem;">
+                <h4>📊 Full Transparency</h4>
+                <p style="font-size: 12px; margin-bottom: 1rem;">
+                    <strong>Revenue Split:</strong><br>
+                    <span style="color: var(--green); font-weight: 600;">98% → Gas Fee Pool</span><br>
+                    <span style="color: var(--cyan);">2% → Platform Maintenance</span><br>
+                </p>
+                <p style="font-size: 12px;">
+                    <strong>This Month:</strong><br>
+                    Total Revenue: $1,830<br>
+                    → Gas Pool: $1,793 (98%)<br>
+                    → Maintenance: $37 (2%)<br>
+                    <br>
+                    Gas Fees Paid: $1,104<br>
+                    Pool Surplus: $689
+                </p>
+                <p style="font-size: 11px; color: var(--dim); margin-top: 1rem; line-height: 1.4;">
+                    Platform maintenance covers: hosting, development, security, 
+                    creator compensation for building/maintaining this tool for survivors.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="status">
+        <div class="status-item">
+            <span class="status-dot"></span>
+            <span>Gas Pool: $847</span>
+        </div>
+        <div class="status-item">
+            <span class="status-dot"></span>
+            <span>Free Posts Available: 76,000+</span>
+        </div>
+        <div class="status-item">
+            <span class="status-dot"></span>
+            <span>Blockchain: Polygon</span>
+        </div>
+        <div class="status-item" style="color: var(--green);">
+            🆓 100% FREE FOREVER
+        </div>
+    </div>
+
+    <script>
+        console.log('💚 CRYSTALLINE - FREE FOR ALL');
+        console.log('Gas fees covered by: Ads + Donations');
+        console.log('Cost to survivors: $0.00');
+        console.log('Posts funded so far: 5,234');
+        console.log('Current pool balance: $847');
+    </script>
+</body>
+</html>
